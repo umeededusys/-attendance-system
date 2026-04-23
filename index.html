@@ -452,11 +452,64 @@ td {
   color: var(--text-muted);
 }
 
+.profile-role {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
 .section-title {
   font-family: 'Cormorant Garamond', serif;
   font-size: 18px;
   font-weight: 600;
   margin-bottom: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════ PRINT STYLES */
+
+@media print {
+  .sidebar, .topbar, .no-print, button { 
+    display: none !important; 
+  }
+  .app-container {
+    display: block;
+  }
+  .main-content {
+    display: block;
+  }
+  .content-area {
+    padding: 20px;
+    background: white;
+    color: black;
+  }
+  body {
+    background: white;
+    color: black;
+  }
+  h1 {
+    color: #000;
+    page-break-after: avoid;
+  }
+  table {
+    page-break-inside: avoid;
+  }
+  .glass-box {
+    border: 1px solid #000;
+    background: white;
+    box-shadow: none;
+  }
+  .stat-card {
+    border: 1px solid #000;
+    background: white;
+    page-break-inside: avoid;
+  }
+  .staff-card {
+    border: 1px solid #000;
+    background: white;
+    page-break-inside: avoid;
+  }
+  .date-label {
+    color: #000;
+  }
 }
 </style>
 </head>
@@ -957,6 +1010,23 @@ function App() {
         <div className="topbar">
           <div style={{ fontSize: 16, fontWeight: 600 }}>Umeed Education System</div>
           <div style={{ display: 'flex', gap: 16 }}>
+            <button 
+              onClick={() => window.print()}
+              style={{ 
+                background: 'transparent', 
+                border: 'none', 
+                color: 'var(--gold)', 
+                cursor: 'pointer', 
+                fontSize: 18,
+                fontWeight: 600,
+                padding: '8px 12px',
+                borderRadius: 6,
+                transition: 'all 200ms'
+              }}
+              title="Print current screen"
+            >
+              🖨️ Print
+            </button>
             <button style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 18 }}>
               🔔
             </button>
