@@ -1160,3 +1160,653 @@ console.log('✅ PROFESSIONAL UI');
 
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Umeed Education System - Staff Attendance</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root, [data-theme="dark"] {
+  --bg-base: #0C0508;
+  --surface: #130810;
+  --maroon: #C41E30;
+  --maroon-deep: #7A0E1A;
+  --gold: #D4AF37;
+  --text-primary: #F2EBF0;
+  --text-secondary: #A89AA5;
+  --text-muted: #6B5E68;
+  --border: rgba(255,255,255,0.07);
+}
+
+[data-theme="light"] {
+  --bg-base: #F8F4F6;
+  --surface: #FFFFFF;
+  --text-primary: #1A0810;
+  --text-secondary: #4A2D3C;
+  --text-muted: #8A6878;
+  --border: rgba(0,0,0,0.08);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body, #root { height: 100%; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  transition: background 300ms, color 300ms;
+}
+
+/* ═══════════════════════════════════════════════════════ SPLASH SCREEN */
+
+.splash-container {
+  display: flex;
+  height: 100vh;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0C0508 0%, #1A0C15 100%);
+  flex-direction: column;
+  gap: 30px;
+  perspective: 1200px;
+}
+
+.logo-wrapper {
+  width: 220px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.logo-3d {
+  width: 100%;
+  height: 100%;
+  animation: float3d 4s ease-in-out infinite;
+  filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.6)) drop-shadow(0 0 50px rgba(196, 30, 48, 0.4));
+}
+
+@keyframes float3d {
+  0% {
+    transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) translateY(0px);
+  }
+  25% {
+    transform: rotateX(15deg) rotateY(90deg) rotateZ(10deg) translateY(-10px);
+  }
+  50% {
+    transform: rotateX(30deg) rotateY(180deg) rotateZ(20deg) translateY(0px);
+  }
+  75% {
+    transform: rotateX(15deg) rotateY(270deg) rotateZ(10deg) translateY(-10px);
+  }
+  100% {
+    transform: rotateX(0deg) rotateY(360deg) rotateZ(0deg) translateY(0px);
+  }
+}
+
+.splash-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 56px;
+  font-weight: 700;
+  color: #F2EBF0;
+  letter-spacing: 2px;
+  animation: fadeInUp 0.8s ease-out 0.3s both;
+}
+
+.splash-sub {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 36px;
+  color: #D4AF37;
+  letter-spacing: 3px;
+  animation: fadeInUp 0.8s ease-out 0.5s both;
+}
+
+.splash-desc {
+  color: #A89AA5;
+  font-size: 13px;
+  text-align: center;
+  animation: fadeInUp 0.8s ease-out 0.7s both;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════════ LOGIN SCREEN */
+
+.login-container {
+  display: flex;
+  height: 100vh;
+  background: linear-gradient(135deg, #0C0508 0%, #1A0C15 100%);
+}
+
+.login-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.logo-badge {
+  width: 160px;
+  height: 160px;
+  margin-bottom: 50px;
+  filter: drop-shadow(0 15px 40px rgba(196, 30, 48, 0.5));
+  animation: fadeInUp 0.8s ease-out both;
+}
+
+.login-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 48px;
+  font-weight: 700;
+  color: #F2EBF0;
+  margin-bottom: 10px;
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+.login-subtitle {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px;
+  color: #D4AF37;
+  margin-bottom: 30px;
+  animation: fadeInUp 0.8s ease-out 0.4s both;
+}
+
+.login-desc {
+  color: #A89AA5;
+  text-align: center;
+  font-size: 13px;
+  animation: fadeInUp 0.8s ease-out 0.6s both;
+}
+
+.login-right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.login-card {
+  background: rgba(26, 12, 21, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(196, 30, 48, 0.3);
+  border-radius: 24px;
+  padding: 50px 40px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+  animation: fadeInUp 0.8s ease-out 0.3s both;
+}
+
+.card-header {
+  margin-bottom: 30px;
+}
+
+.card-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #D4AF37;
+  margin-bottom: 8px;
+}
+
+.card-subtitle {
+  color: #A89AA5;
+  font-size: 13px;
+}
+
+.form-group {
+  margin-bottom: 22px;
+}
+
+.form-label {
+  display: block;
+  color: #6B5E68;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 13px 16px;
+  background: rgba(255, 255, 255, 0.042);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  color: #F2EBF0;
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 200ms ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #C41E30;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(196, 30, 48, 0.15);
+}
+
+.form-input::placeholder {
+  color: #6B5E68;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 13px 20px;
+  background: linear-gradient(135deg, #C41E30 0%, #7A0E1A 100%);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 200ms ease;
+  margin-top: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(196, 30, 48, 0.4);
+}
+
+.submit-btn:active {
+  transform: translateY(0px);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-alert {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 10px;
+  color: #f87171;
+  padding: 12px 14px;
+  font-size: 12px;
+  margin-bottom: 20px;
+  animation: shake 0.4s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.login-footer {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  text-align: center;
+  color: #6B5E68;
+  font-size: 10px;
+}
+
+/* ═══════════════════════════════════════════════════════ UTILITY */
+
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(212, 175, 55, 0.3);
+  border-top: 2px solid #D4AF37;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .login-container {
+    flex-direction: column;
+  }
+  .login-left, .login-right {
+    flex: 1;
+  }
+  .splash-text {
+    font-size: 42px;
+  }
+  .splash-sub {
+    font-size: 28px;
+  }
+  .login-card {
+    width: 90%;
+    padding: 40px 30px;
+  }
+}
+</style>
+</head>
+
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+// ═════════════════════════════════════════════════ SUPABASE CONFIG
+
+const SUPABASE_URL = 'https://edboqmaywwxbnltscrso.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkYm9xbWF5d3d4Ym5sdHNjcnNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NjcwMDMsImV4cCI6MjA5MjQ0MzAwM30.2U8omeYP57ENxJcg5Yg1Egt2mwIMBAgxyNnLQtLGC_o';
+
+let supabaseClient = null;
+
+try {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  console.log('✅ PHASE 1: Supabase Connected Successfully');
+} catch (error) {
+  console.error('❌ PHASE 1: Supabase Connection Error', error);
+}
+
+// ═════════════════════════════════════════════════ UMEED PROFESSIONAL LOGO
+
+function ProfessionalLogo() {
+  return (
+    <svg viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style={{stopColor: '#C41E30', stopOpacity: 1}} />
+          <stop offset="100%" style={{stopColor: '#A01020', stopOpacity: 1}} />
+        </linearGradient>
+        <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style={{stopColor: '#E5C158', stopOpacity: 1}} />
+          <stop offset="100%" style={{stopColor: '#B8941E', stopOpacity: 1}} />
+        </linearGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* Shield Border Outer - Gold */}
+      <path d="M100 10 C100 10 150 35 150 95 C150 155 100 200 100 200 C100 200 50 155 50 95 C50 35 100 10 100 10 Z" 
+            fill="none" stroke="#D4AF37" strokeWidth="3" filter="url(#glow)"/>
+
+      {/* Shield Main - Maroon */}
+      <path d="M100 15 C100 15 145 38 145 95 C145 150 100 190 100 190 C100 190 55 150 55 95 C55 38 100 15 100 15 Z" 
+            fill="url(#shieldGrad)"/>
+
+      {/* Shield Inner Border - Gold */}
+      <path d="M100 22 C100 22 138 42 138 95 C138 145 100 180 100 180 C100 180 62 145 62 95 C62 42 100 22 100 22 Z" 
+            fill="none" stroke="#D4AF37" strokeWidth="2" opacity="0.6"/>
+
+      {/* Sun - Rays */}
+      <circle cx="100" cy="55" r="12" fill="#D4AF37"/>
+      <g stroke="#D4AF37" strokeWidth="2" strokeLinecap="round">
+        <line x1="100" y1="38" x2="100" y2="28"/>
+        <line x1="125" y1="55" x2="135" y2="55"/>
+        <line x1="75" y1="55" x2="65" y2="55"/>
+        <line x1="118" y1="42" x2="125" y2="35"/>
+        <line x1="82" y1="68" x2="75" y2="75"/>
+      </g>
+
+      {/* UMEED Text */}
+      <text x="100" y="105" textAnchor="middle" fontSize="40" fontWeight="700" fill="white" fontFamily="Arial, sans-serif">
+        UMEED
+      </text>
+
+      {/* Education System Text */}
+      <text x="100" y="125" textAnchor="middle" fontSize="12" fontWeight="600" fill="#D4AF37" fontFamily="Arial, sans-serif" letterSpacing="1">
+        EDUCATION
+      </text>
+      <text x="100" y="137" textAnchor="middle" fontSize="12" fontWeight="600" fill="#D4AF37" fontFamily="Arial, sans-serif" letterSpacing="1">
+        SYSTEM
+      </text>
+
+      {/* Protective Hands */}
+      <path d="M70 150 Q65 160 68 175" stroke="white" strokeWidth="3" fill="none" strokeLinecap="round"/>
+      <path d="M75 150 Q75 165 78 178" stroke="white" strokeWidth="3" fill="none" strokeLinecap="round"/>
+      <path d="M130 150 Q135 160 132 175" stroke="white" strokeWidth="3" fill="none" strokeLinecap="round"/>
+      <path d="M125 150 Q125 165 122 178" stroke="white" strokeWidth="3" fill="none" strokeLinecap="round"/>
+
+      {/* Bottom Ribbon */}
+      <ellipse cx="100" cy="195" rx="48" ry="12" fill="url(#goldGrad)" stroke="#B8941E" strokeWidth="1"/>
+      <text x="100" y="202" textAnchor="middle" fontSize="9" fill="#000" fontFamily="Arial" fontWeight="700" letterSpacing="0.5">
+        تعلیم سے ترقی
+      </text>
+    </svg>
+  );
+}
+
+// ═════════════════════════════════════════════════ SPLASH SCREEN
+
+function SplashScreen({ onComplete }) {
+  useEffect(() => {
+    const timer = setTimeout(onComplete, 4000);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+
+  return (
+    <div className="splash-container">
+      <div className="logo-wrapper">
+        <div className="logo-3d">
+          <ProfessionalLogo />
+        </div>
+      </div>
+      <div className="splash-text">UMEED</div>
+      <div className="splash-sub">EDUCATION SYSTEM</div>
+      <div className="splash-desc">Staff Attendance Management Platform</div>
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════ LOGIN SCREEN
+
+function LoginScreen({ onLoginSuccess, onError }) {
+  const [email, setEmail] = useState('principal@umeededu.pk');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    // Validation
+    if (!email.trim()) {
+      setError('Email is required');
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError('Invalid email format');
+      return;
+    }
+
+    if (!password) {
+      setError('Password is required');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    setLoading(true);
+
+    // Simulate API call
+    setTimeout(() => {
+      // HARD-CODED CREDENTIALS (For now - Phase 1)
+      // Phase 2 will use real Supabase authentication
+      const adminEmail = 'principal@umeededu.pk';
+      const adminPassword = 'admin123';
+
+      if (email === adminEmail && password === adminPassword) {
+        console.log('✅ PHASE 1: Login Successful');
+        onLoginSuccess({
+          email,
+          name: 'H.M. Tariq Mehmood',
+          role: 'Principal - Admin',
+          school: 'Umeed Education System'
+        });
+      } else {
+        setError('Invalid email or password');
+        console.log('❌ PHASE 1: Login Failed');
+      }
+
+      setLoading(false);
+    }, 500);
+  };
+
+  return (
+    <div className="login-container">
+      <div className="login-left">
+        <div className="logo-badge">
+          <ProfessionalLogo />
+        </div>
+        <h1 className="login-title">UMEED</h1>
+        <p className="login-subtitle">EDUCATION SYSTEM</p>
+        <p className="login-desc">Staff Attendance & Management Platform</p>
+      </div>
+
+      <div className="login-right">
+        <div className="login-card">
+          <div className="card-header">
+            <h2 className="card-title">Admin Portal</h2>
+            <p className="card-subtitle">Sign in to your account</p>
+          </div>
+
+          {error && <div className="error-alert">{error}</div>}
+
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label className="form-label">Email Address</label>
+              <input
+                type="email"
+                className="form-input"
+                placeholder="principal@umeededu.pk"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Password</label>
+              <input
+                type="password"
+                className="form-input"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="submit-btn"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span className="loading-spinner" style={{marginRight: 8}}></span>
+                  Signing in...
+                </>
+              ) : (
+                'Sign In →'
+              )}
+            </button>
+          </form>
+
+          <div className="login-footer">
+            <p>PHASE 1: Foundation</p>
+            <p>Umeed Education System v2024</p>
+            <p>Academic Year 2025-26</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════ MAIN APP
+
+function App() {
+  const [showSplash, setShowSplash] = useState(true);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('✅ PHASE 1: PROFESSIONAL FOUNDATION');
+    console.log('✅ 3D Rotating Logo Animation - READY');
+    console.log('✅ Professional Login Screen - READY');
+    console.log('✅ Supabase Connection - READY');
+    console.log('═══════════════════════════════════════════════════════');
+  }, []);
+
+  if (showSplash) {
+    return <SplashScreen onComplete={() => setShowSplash(false)} />;
+  }
+
+  if (!user) {
+    return <LoginScreen onLoginSuccess={setUser} />;
+  }
+
+  // Phase 1 Complete - Dashboard placeholder
+  return (
+    <div style={{
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'var(--bg-base)',
+      color: 'var(--text-primary)',
+      textAlign: 'center',
+      gap: 20
+    }}>
+      <h1 style={{fontSize: 32, fontFamily: "'Cormorant Garamond', serif"}}>Welcome, {user.name}</h1>
+      <p style={{color: 'var(--gold)', fontSize: 18}}>PHASE 1 Complete ✅</p>
+      <p style={{color: 'var(--text-secondary)'}}>Next: Phase 2 - Dashboard & Charts</p>
+      <button
+        onClick={() => setUser(null)}
+        style={{
+          padding: '12px 24px',
+          background: 'var(--maroon)',
+          color: 'white',
+          border: 'none',
+          borderRadius: 8,
+          cursor: 'pointer',
+          fontWeight: 600,
+          marginTop: 20
+        }}
+      >
+        Logout
+      </button>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+</body>
+</html>
