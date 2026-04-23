@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Umeed Education System - Staff Attendance</title>
+<title>Umeed Education System - Staff Attendance v4</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -124,9 +124,14 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .table-box tr:hover { background: rgba(196,30,48,0.05); }
 
 .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 9px; font-weight: 600; text-transform: uppercase; }
-.badge-present { background: rgba(34,197,94,0.2); color: #22C55E; }
-.badge-absent { background: rgba(239,68,68,0.2); color: #EF4444; }
-.badge-late { background: rgba(251,191,36,0.2); color: #FBB924; }
+.badge-present { background: rgba(34, 197, 94, 0.2); color: #22C55E; }
+.badge-absent { background: rgba(239, 68, 68, 0.2); color: #EF4444; }
+.badge-late { background: rgba(251, 191, 36, 0.2); color: #FBB924; }
+.badge-approved { background: rgba(34, 197, 94, 0.2); color: #22C55E; }
+.badge-pending { background: rgba(251, 191, 36, 0.2); color: #FBB924; }
+.badge-rejected { background: rgba(239, 68, 68, 0.2); color: #EF4444; }
+.badge-success { background: rgba(34, 197, 94, 0.2); color: #22C55E; }
+.badge-failed { background: rgba(239, 68, 68, 0.2); color: #EF4444; }
 
 .search-input { width: 100%; padding: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; margin-bottom: 15px; }
 .search-input:focus { outline: none; border-color: var(--maroon); }
@@ -151,12 +156,14 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .modal-title { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; }
 .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-mute); }
 
-.camera-area { width: 100%; height: 200px; background: #222; border-radius: 10px; margin: 10px 0; display: flex; align-items: center; justify-content: center; color: var(--text-mute); font-size: 12px; }
-
 .btn-group { display: flex; gap: 8px; margin-top: 15px; }
 .btn-primary { flex: 1; padding: 9px; background: var(--maroon); border: none; border-radius: 6px; color: white; font-weight: 600; font-size: 11px; cursor: pointer; }
 .btn-primary:hover { opacity: 0.9; }
 .btn-secondary { flex: 1; padding: 9px; background: rgba(196,30,48,0.15); border: 1px solid rgba(196,30,48,0.25); border-radius: 6px; color: var(--maroon); font-weight: 600; font-size: 11px; cursor: pointer; }
+
+.export-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+.export-btn { padding: 8px 16px; background: var(--success); border: none; border-radius: 6px; color: white; font-weight: 600; font-size: 11px; cursor: pointer; margin-right: 8px; }
+.export-btn:hover { opacity: 0.9; }
 
 @media (max-width: 1024px) {
   .chart-grid { grid-template-columns: 1fr; }
@@ -166,11 +173,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 @media (max-width: 768px) {
   .login { flex-direction: column; }
   .app { flex-direction: column; }
-  
   .sidebar { width: 100%; max-height: 60px; flex-direction: row; border-bottom: 1px solid var(--border); border-right: none; padding: 10px 15px; }
   .sidebar-brand { margin-bottom: 0; margin-right: auto; font-size: 14px; }
   .nav-group, .sidebar-footer { display: none; }
-  
   .content { padding: 15px; }
   .header-title { font-size: 20px; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -224,7 +229,7 @@ function Login({ onAuth }) {
     setLoading(true);
     setTimeout(() => {
       if (email === 'principal@umeededu.pk' && pass === 'admin123') {
-        onAuth({ name: 'H.M. Tariq Mehmood', role: 'Principal' });
+        onAuth({ name: 'H.M. Tariq Mehmood', role: 'Principal', id: 'UES-001' });
       } else {
         setErr('Invalid credentials');
       }
@@ -232,8 +237,21 @@ function Login({ onAuth }) {
     }, 300);
   };
 
-  return (<div className="login"><div className="login-left"><div className="logo-badge"><Logo /></div><h1 className="login-title">UMEED</h1><p className="login-subtitle">EDUCATION SYSTEM</p><p className="login-desc">Staff Attendance Management</p></div><div className="login-right"><div className="login-card"><h2 className="card-title">Admin Portal</h2><p className="card-sub">Sign in to your account</p>{err && <div className="error-msg">{err}</div>}<form onSubmit={submit}><div className="form-group"><label className="form-label">Email</label><input type="email" className="form-input" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} /></div><div className="form-group"><label className="form-label">Password</label><input type="password" className="form-input" value={pass} onChange={(e) => setPass(e.target.value)} disabled={loading} /></div><button type="submit" className="submit-btn" disabled={loading}>{loading ? 'Signing in...' : 'Sign In'}</button></form></div></div></div>);
+  return (<div className="login"><div className="login-left"><div className="logo-badge"><Logo /></div><h1 className="login-title">UMEED</h1><p className="login-subtitle">EDUCATION SYSTEM</p><p className="login-desc">Staff Attendance Management v4</p></div><div className="login-right"><div className="login-card"><h2 className="card-title">Admin Portal</h2><p className="card-sub">Sign in to your account</p>{err && <div className="error-msg">{err}</div>}<form onSubmit={submit}><div className="form-group"><label className="form-label">Email</label><input type="email" className="form-input" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} /></div><div className="form-group"><label className="form-label">Password</label><input type="password" className="form-input" value={pass} onChange={(e) => setPass(e.target.value)} disabled={loading} /></div><button type="submit" className="submit-btn" disabled={loading}>{loading ? 'Signing in...' : 'Sign In'}</button></form></div></div></div>);
 }
+
+const attData = [
+  {id: 'UES-001', name: 'H.M. Tariq', date: '2025-04-23', time: '07:45', status: 'Present'},
+  {id: 'UES-002', name: 'Mrs. Ruqaiya', date: '2025-04-23', time: '08:00', status: 'Present'},
+  {id: 'UES-003', name: 'Mr. Bilal', date: '2025-04-23', time: '08:35', status: 'Late'},
+  {id: 'UES-004', name: 'Miss Tayyaba', date: '2025-04-23', time: '—', status: 'Absent'},
+];
+
+const deviceLogs = [
+  {id: 1, user: 'H.M. Tariq', device: 'Chrome/Windows', login: '2025-04-23 07:45', logout: '2025-04-23 16:30', status: 'success'},
+  {id: 2, user: 'Mrs. Ruqaiya', device: 'Safari/MacOS', login: '2025-04-23 08:00', logout: '2025-04-23 16:45', status: 'success'},
+  {id: 3, user: 'Mr. Bilal', device: 'Chrome/Windows', login: '2025-04-23 08:35', logout: '2025-04-23 17:00', status: 'success'},
+];
 
 function Dashboard() {
   const canvasRef = useRef(null);
@@ -266,10 +284,7 @@ function Dashboard() {
       <table>
         <thead><tr><th>ID</th><th>Name</th><th>Time</th><th>Status</th></tr></thead>
         <tbody>
-          <tr><td>UES-001</td><td>H.M. Tariq Mehmood</td><td>07:45</td><td><span className="badge badge-present">Present</span></td></tr>
-          <tr><td>UES-002</td><td>Mrs. Ruqaiya</td><td>08:00</td><td><span className="badge badge-present">Present</span></td></tr>
-          <tr><td>UES-003</td><td>Mr. Muhammad</td><td>08:35</td><td><span className="badge badge-late">Late</span></td></tr>
-          <tr><td>UES-004</td><td>Miss Tayyaba</td><td>—</td><td><span className="badge badge-absent">Absent</span></td></tr>
+          {attData.map((r, i) => (<tr key={i}><td>{r.id}</td><td>{r.name}</td><td>{r.time}</td><td><span className={`badge badge-${r.status.toLowerCase()}`}>{r.status}</span></td></tr>))}
         </tbody>
       </table>
     </div>
@@ -280,10 +295,13 @@ function Staff() {
   const [search, setSearch] = useState('');
   const staffList = [
     {id: 'UES-001', name: 'H.M. Tariq Mehmood', role: 'Principal', dept: 'Admin'},
-    {id: 'UES-002', name: 'Mrs. Ruqaiya', role: 'Co-Principal', dept: 'Admin'},
-    {id: 'UES-003', name: 'Miss Ayesha', role: 'Teacher', dept: 'Primary'},
-    {id: 'UES-004', name: 'Mr. Bilal', role: 'Teacher', dept: 'Secondary'},
-    {id: 'UES-005', name: 'Miss Iqra', role: 'Assistant', dept: 'Primary'},
+    {id: 'UES-002', name: 'Mrs. Ruqaiya Bibi', role: 'Co-Principal', dept: 'Admin'},
+    {id: 'UES-003', name: 'Miss Ayesha Zahid', role: 'Teacher PG', dept: 'Primary'},
+    {id: 'UES-004', name: 'Mr. Muhammad Bilal', role: 'Teacher', dept: 'Secondary'},
+    {id: 'UES-005', name: 'Miss Iqra Saleem', role: 'Assistant', dept: 'Primary'},
+    {id: 'UES-006', name: 'Sir Hamza', role: 'Urdu Teacher', dept: 'Secondary'},
+    {id: 'UES-007', name: 'Miss Tayyaba', role: 'Admin Assistant', dept: 'Admin'},
+    {id: 'UES-008', name: 'Mr. Fahad Malik', role: 'Math Teacher', dept: 'Secondary'},
   ];
 
   const filtered = staffList.filter(s => s.name.toLowerCase().includes(search.toLowerCase()) || s.id.includes(search));
@@ -307,21 +325,42 @@ function Staff() {
 
 function Attendance() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const records = [
-    {id: 'UES-001', name: 'H.M. Tariq', time: '07:45', status: 'Present'},
-    {id: 'UES-002', name: 'Mrs. Ruqaiya', time: '08:00', status: 'Present'},
-    {id: 'UES-003', name: 'Mr. Bilal', time: '08:35', status: 'Late'},
-    {id: 'UES-004', name: 'Miss Tayyaba', time: '—', status: 'Absent'},
-  ];
+  const [exportFormat, setExportFormat] = useState(null);
+
+  const handleExport = (format) => {
+    let csv = 'ID,Name,Date,Time,Status\n';
+    attData.forEach(r => {
+      csv += `${r.id},${r.name},${r.date},${r.time},${r.status}\n`;
+    });
+    
+    if (format === 'csv') {
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `attendance-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      alert('Attendance exported as CSV');
+    } else if (format === 'print') {
+      window.print();
+    }
+  };
 
   return (<>
-    <div className="header"><h1 className="header-title">Attendance Records</h1><p className="header-date">Daily tracking</p></div>
+    <div className="header"><h1 className="header-title">Attendance Records</h1><p className="header-date">Daily tracking and export</p></div>
     <div style={{marginBottom: 15}}><label className="form-label">Date</label><input type="date" className="search-input" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+    
+    <div className="export-box">
+      <label className="form-label">Export Options</label>
+      <button className="export-btn" onClick={() => handleExport('csv')}>📥 Export CSV</button>
+      <button className="export-btn" onClick={() => handleExport('print')}>🖨️ Print</button>
+    </div>
+
     <div className="table-box">
       <table>
-        <thead><tr><th>ID</th><th>Name</th><th>Check-in</th><th>Status</th></tr></thead>
+        <thead><tr><th>ID</th><th>Name</th><th>Date</th><th>Check-in</th><th>Status</th></tr></thead>
         <tbody>
-          {records.map((r, i) => (<tr key={i}><td>{r.id}</td><td>{r.name}</td><td>{r.time}</td><td><span className={`badge badge-${r.status.toLowerCase()}`}>{r.status}</span></td></tr>))}
+          {attData.map((r, i) => (<tr key={i}><td>{r.id}</td><td>{r.name}</td><td>{r.date}</td><td>{r.time}</td><td><span className={`badge badge-${r.status.toLowerCase()}`}>{r.status}</span></td></tr>))}
         </tbody>
       </table>
     </div>
@@ -331,23 +370,24 @@ function Attendance() {
 function Leaves() {
   const [filter, setFilter] = useState('All');
   const leaves = [
-    {id: 'L-001', name: 'H.M. Tariq', type: 'Annual', from: '2025-03-15', to: '2025-03-20', status: 'Approved'},
-    {id: 'L-002', name: 'Miss Ayesha', type: 'Sick', from: '2025-03-22', to: '2025-03-23', status: 'Pending'},
-    {id: 'L-003', name: 'Mr. Bilal', type: 'Annual', from: '2025-04-01', to: '2025-04-10', status: 'Pending'},
+    {id: 'L-001', name: 'H.M. Tariq', type: 'Annual', from: '2025-03-15', to: '2025-03-20', days: 5, status: 'Approved', reason: 'Family Visit'},
+    {id: 'L-002', name: 'Miss Ayesha', type: 'Sick', from: '2025-03-22', to: '2025-03-23', days: 2, status: 'Pending', reason: 'Medical'},
+    {id: 'L-003', name: 'Mr. Bilal', type: 'Annual', from: '2025-04-01', to: '2025-04-10', days: 10, status: 'Pending', reason: 'Vacation'},
+    {id: 'L-004', name: 'Mrs. Ruqaiya', type: 'Personal', from: '2025-03-18', to: '2025-03-19', days: 2, status: 'Rejected', reason: 'Personal'},
   ];
 
   const filtered = filter === 'All' ? leaves : leaves.filter(l => l.status === filter);
 
   return (<>
-    <div className="header"><h1 className="header-title">Leave Management</h1><p className="header-date">Leave requests and approvals</p></div>
+    <div className="header"><h1 className="header-title">Leave Management</h1><p className="header-date">Leave requests: {filtered.length}</p></div>
     <div className="filter-group">
-      {['All', 'Pending', 'Approved'].map(f => (<button key={f} className={`filter-btn ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>{f}</button>))}
+      {['All', 'Pending', 'Approved', 'Rejected'].map(f => (<button key={f} className={`filter-btn ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>{f}</button>))}
     </div>
     <div className="table-box">
       <table>
-        <thead><tr><th>ID</th><th>Name</th><th>Type</th><th>From</th><th>To</th><th>Status</th></tr></thead>
+        <thead><tr><th>ID</th><th>Name</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Status</th></tr></thead>
         <tbody>
-          {filtered.map((l, i) => (<tr key={i}><td>{l.id}</td><td>{l.name}</td><td>{l.type}</td><td>{l.from}</td><td>{l.to}</td><td><span className={`badge badge-${l.status.toLowerCase()}`}>{l.status}</span></td></tr>))}
+          {filtered.map((l, i) => (<tr key={i}><td>{l.id}</td><td>{l.name}</td><td>{l.type}</td><td>{l.from}</td><td>{l.to}</td><td>{l.days}</td><td><span className={`badge badge-${l.status.toLowerCase()}`}>{l.status}</span></td></tr>))}
         </tbody>
       </table>
     </div>
@@ -355,16 +395,49 @@ function Leaves() {
 }
 
 function Reports() {
+  const [dateFrom, setDateFrom] = useState('2025-01-01');
+  const [dateTo, setDateTo] = useState('2025-04-23');
+
   return (<>
-    <div className="header"><h1 className="header-title">Reports</h1><p className="header-date">Attendance analytics and statistics</p></div>
+    <div className="header"><h1 className="header-title">Advanced Reports</h1><p className="header-date">Comprehensive attendance analytics</p></div>
+    
+    <div className="export-box">
+      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10}}>
+        <div><label className="form-label">From Date</label><input type="date" className="search-input" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} style={{marginBottom: 0}} /></div>
+        <div><label className="form-label">To Date</label><input type="date" className="search-input" value={dateTo} onChange={(e) => setDateTo(e.target.value)} style={{marginBottom: 0}} /></div>
+      </div>
+    </div>
+
     <div className="table-box">
-      <h3 style={{fontSize: 12, marginBottom: 12, fontWeight: 600}}>Monthly Summary</h3>
+      <h3 style={{fontSize: 12, marginBottom: 12, fontWeight: 600}}>Monthly Summary ({dateFrom} to {dateTo})</h3>
       <table>
-        <thead><tr><th>Month</th><th>Present</th><th>Absent</th><th>Late</th><th>Percentage</th></tr></thead>
+        <thead><tr><th>Month</th><th>Present</th><th>Absent</th><th>Late</th><th>Total Days</th><th>Attendance %</th></tr></thead>
         <tbody>
-          <tr><td>January</td><td>35</td><td>7</td><td>4</td><td>75.2%</td></tr>
-          <tr><td>February</td><td>34</td><td>9</td><td>3</td><td>72.9%</td></tr>
-          <tr><td>March</td><td>36</td><td>6</td><td>4</td><td>77.1%</td></tr>
+          <tr><td>January 2025</td><td>35</td><td>7</td><td>4</td><td>46</td><td>76.1%</td></tr>
+          <tr><td>February 2025</td><td>34</td><td>9</td><td>3</td><td>46</td><td>73.9%</td></tr>
+          <tr><td>March 2025</td><td>36</td><td>6</td><td>4</td><td>46</td><td>78.3%</td></tr>
+          <tr><td>April 2025</td><td>32</td><td>8</td><td>5</td><td>45</td><td>71.1%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </>);
+}
+
+function DeviceLogs() {
+  const [filter, setFilter] = useState('All');
+
+  const filtered = filter === 'All' ? deviceLogs : deviceLogs.filter(l => l.status === filter);
+
+  return (<>
+    <div className="header"><h1 className="header-title">Device Logs</h1><p className="header-date">User login and activity tracking</p></div>
+    <div className="filter-group">
+      {['All', 'success', 'failed'].map(f => (<button key={f} className={`filter-btn ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>{f === 'All' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}</button>))}
+    </div>
+    <div className="table-box">
+      <table>
+        <thead><tr><th>User</th><th>Device</th><th>Login Time</th><th>Logout Time</th><th>Status</th></tr></thead>
+        <tbody>
+          {filtered.map((log, i) => (<tr key={i}><td>{log.user}</td><td>{log.device}</td><td>{log.login}</td><td>{log.logout}</td><td><span className={`badge badge-${log.status}`}>{log.status}</span></td></tr>))}
         </tbody>
       </table>
     </div>
@@ -386,14 +459,18 @@ function App() {
 
   return (<div className="app">
     <div className="sidebar">
-      <div className="sidebar-brand">UMEED</div>
+      <div className="sidebar-brand">UMEED v4</div>
       <div className="nav-group">
-        <div className="nav-label">Navigation</div>
+        <div className="nav-label">Core</div>
         <button className={`nav-btn ${page === 'dashboard' ? 'active' : ''}`} onClick={() => setPage('dashboard')}>Dashboard</button>
         <button className={`nav-btn ${page === 'staff' ? 'active' : ''}`} onClick={() => setPage('staff')}>Staff</button>
         <button className={`nav-btn ${page === 'attendance' ? 'active' : ''}`} onClick={() => setPage('attendance')}>Attendance</button>
         <button className={`nav-btn ${page === 'leaves' ? 'active' : ''}`} onClick={() => setPage('leaves')}>Leaves</button>
+      </div>
+      <div className="nav-group">
+        <div className="nav-label">Analysis</div>
         <button className={`nav-btn ${page === 'reports' ? 'active' : ''}`} onClick={() => setPage('reports')}>Reports</button>
+        <button className={`nav-btn ${page === 'devices' ? 'active' : ''}`} onClick={() => setPage('devices')}>Device Logs</button>
       </div>
       <div className="sidebar-footer">
         <div className="user-card"><div className="user-name">{user.name}</div><div className="user-role">{user.role}</div></div>
@@ -403,7 +480,7 @@ function App() {
 
     <div className="main">
       <div className="topbar">
-        <div className="topbar-title">Umeed Education System</div>
+        <div className="topbar-title">Umeed Education System - Phase 4</div>
         <div className="topbar-actions">
           <button className="theme-btn" onClick={() => { const h = document.documentElement; const curr = h.getAttribute('data-theme'); const next = curr === 'dark' ? 'light' : 'dark'; h.setAttribute('data-theme', next); localStorage.setItem('theme', next); }}>{document.documentElement.getAttribute('data-theme') === 'dark' ? '🌙' : '☀️'}</button>
           <button className="action-btn" onClick={() => window.print()}>Print</button>
@@ -415,6 +492,7 @@ function App() {
         {page === 'attendance' && <Attendance />}
         {page === 'leaves' && <Leaves />}
         {page === 'reports' && <Reports />}
+        {page === 'devices' && <DeviceLogs />}
       </div>
     </div>
   </div>);
