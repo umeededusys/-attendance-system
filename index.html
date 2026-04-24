@@ -2221,3 +2221,318 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UMEED Education System - Login</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0a0610 0%, #0c0814 100%);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-container {
+      background: rgba(20, 8, 17, 0.95);
+      border: 1px solid rgba(196, 30, 48, 0.3);
+      border-radius: 20px;
+      padding: 50px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+    }
+    .logo-section {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .logo {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 20px;
+      background: linear-gradient(135deg, #C41E30, #D4AF37);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 24px;
+    }
+    h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #D4AF37;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #aaa;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    input {
+      width: 100%;
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    input:focus {
+      outline: none;
+      border-color: #C41E30;
+      box-shadow: 0 0 0 3px rgba(196, 30, 48, 0.2);
+    }
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #C41E30, #8B0A1E);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 20px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.3s;
+    }
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(196, 30, 48, 0.4);
+    }
+    .btn-login:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .error {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.5);
+      color: #ff9999;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 12px;
+    }
+    .success {
+      background: rgba(34, 197, 94, 0.2);
+      border: 1px solid rgba(34, 197, 94, 0.5);
+      color: #99ff99;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 12px;
+    }
+    .demo-info {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed rgba(255, 255, 255, 0.15);
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+    .demo-label {
+      font-weight: 700;
+      color: #D4AF37;
+      margin-bottom: 8px;
+    }
+    .loading {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #C41E30;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .dashboard {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .dashboard h2 {
+      font-size: 28px;
+      margin-bottom: 15px;
+      color: #D4AF37;
+    }
+    .user-info {
+      background: rgba(196, 30, 48, 0.1);
+      border: 1px solid rgba(196, 30, 48, 0.3);
+      padding: 20px;
+      border-radius: 10px;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+    .logout-btn {
+      margin-top: 20px;
+      padding: 12px 24px;
+      background: #C41E30;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div id="login-section" class="login-container">
+  <div class="logo-section">
+    <div class="logo">📚</div>
+    <h1>UMEED</h1>
+    <p class="subtitle">Education System</p>
+  </div>
+
+  <div id="error-msg"></div>
+  <div id="success-msg"></div>
+
+  <form id="login-form">
+    <div class="form-group">
+      <label for="email">Email Address</label>
+      <input type="email" id="email" placeholder="tariq.mehmood@umeed.pk" value="tariq.mehmood@umeed.pk" required>
+    </div>
+
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="Enter password (or leave blank)" value="">
+    </div>
+
+    <button type="submit" class="btn-login" id="login-btn">
+      <span id="btn-text">SIGN IN</span>
+    </button>
+  </form>
+
+  <div class="demo-info">
+    <div class="demo-label">📝 Demo Credentials:</div>
+    Email: tariq.mehmood@umeed.pk<br>
+    (Password can be empty or anything)<br><br>
+    <strong>Other staff emails:</strong><br>
+    ayesha.zahid@umeed.pk<br>
+    hamza@umeed.pk<br>
+    ... (any staff email from database)
+  </div>
+</div>
+
+<div id="dashboard-section" style="display: none; width: 100%; max-width: 600px;">
+  <div class="login-container dashboard">
+    <h2>✅ Login Successful!</h2>
+    <div class="user-info">
+      <p><strong>Name:</strong> <span id="user-name"></span></p>
+      <p><strong>Email:</strong> <span id="user-email"></span></p>
+      <p><strong>Role:</strong> <span id="user-role"></span></p>
+      <p><strong>Department:</strong> <span id="user-dept"></span></p>
+    </div>
+    <p style="color: #aaa; font-size: 12px; margin: 20px 0;">
+      Now open your main attendance system HTML file (index__10_.html) to see the full application with all data!
+    </p>
+    <button class="logout-btn" onclick="logout()">← Back to Login</button>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://edboqmaywwxbnltscrso.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkYm9xbWF5d3d4Ym5sdHNjcnNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NjcwMDMsImV4cCI6MjA5MjQ0MzAwM30.2U8omeYP57ENxJcg5Yg1Egt2mwIMBAgxyNnLQtLGC_o';
+
+let supabase;
+try {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+} catch (err) {
+  console.error('Supabase init error:', err);
+}
+
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const email = document.getElementById('email').value.trim();
+  const loginBtn = document.getElementById('login-btn');
+  const btnText = document.getElementById('btn-text');
+  const errorDiv = document.getElementById('error-msg');
+  const successDiv = document.getElementById('success-msg');
+
+  // Clear messages
+  errorDiv.innerHTML = '';
+  successDiv.innerHTML = '';
+
+  // Disable button
+  loginBtn.disabled = true;
+  btnText.innerHTML = '<span class="loading"></span>Signing in...';
+
+  try {
+    if (!supabase) {
+      throw new Error('Supabase not initialized');
+    }
+
+    // Query staff table directly (no Supabase Auth required)
+    const { data, error } = await supabase
+      .from('staff')
+      .select('id, name, email, role, dept')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!data) {
+      errorDiv.innerHTML = '❌ Staff member not found. Check email address.';
+      loginBtn.disabled = false;
+      btnText.innerHTML = 'SIGN IN';
+      return;
+    }
+
+    // Success!
+    successDiv.innerHTML = '✅ Login successful! Loading...';
+    
+    // Show dashboard
+    document.getElementById('login-section').style.display = 'none';
+    document.getElementById('dashboard-section').style.display = 'block';
+    
+    document.getElementById('user-name').textContent = data.name;
+    document.getElementById('user-email').textContent = data.email;
+    document.getElementById('user-role').textContent = data.role || 'Staff';
+    document.getElementById('user-dept').textContent = data.dept || 'N/A';
+
+  } catch (err) {
+    errorDiv.innerHTML = '❌ Error: ' + (err.message || 'Login failed');
+    console.error('Login error:', err);
+    loginBtn.disabled = false;
+    btnText.innerHTML = 'SIGN IN';
+  }
+});
+
+function logout() {
+  document.getElementById('login-section').style.display = 'block';
+  document.getElementById('dashboard-section').style.display = 'none';
+  document.getElementById('login-form').reset();
+  document.getElementById('email').value = 'tariq.mehmood@umeed.pk';
+  document.getElementById('error-msg').innerHTML = '';
+  document.getElementById('success-msg').innerHTML = '';
+}
+</script>
+
+</body>
+</html>
+
