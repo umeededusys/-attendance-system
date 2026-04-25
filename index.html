@@ -543,6 +543,14 @@ body.light-mode .icon-btn,body.light-mode .btn-ghost{background:rgba(255,255,255
 .content,.modal-card,.attendance-table-wrap,.manual-grid{scrollbar-width:thin;scrollbar-color:rgba(212,175,55,.75) rgba(255,255,255,.08)}
 @media (min-width:1300px){.content{padding-left:28px;padding-right:28px}.modal-card{max-width:1500px}.manual-row{grid-template-columns:minmax(210px,1.2fr) 150px 180px 190px 280px minmax(220px,1fr) 42px}}
 @media (max-width:900px){.manual-row{grid-template-columns:180px 130px 150px 150px 230px 220px 36px}.modal-card{width:calc(100vw - 22px);padding:14px}.top{gap:8px}.who{max-width:180px}.who>div:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+
+/* Enterprise top actions */
+.btn-export,.btn-print{border:1px solid rgba(212,175,55,.45);background:rgba(212,175,55,.12);color:#f4d67f;border-radius:12px;padding:10px 14px;font-weight:800;cursor:pointer;white-space:nowrap}
+.btn-print{border-color:rgba(196,30,48,.45);background:rgba(196,30,48,.14);color:#ffb7c0}
+body.light-mode .btn-export,body.light-mode .btn-print{background:#fff;border-color:rgba(80,45,45,.18);color:#51131c}
+@media (max-width: 760px){.btn-export,.btn-print{padding:8px 10px;font-size:12px}.top-right{gap:6px}}
+@media print{body.print-whole-system .content{overflow:visible!important}body.print-whole-system .main{overflow:visible!important}.chart-card,.stat,.report-card,.staff-card,.attendance-table-wrap{break-inside:avoid}}
+
 </style>
 </head>
 <body>
@@ -585,33 +593,30 @@ function Login({onAuth}){
     if(!supabase){setErr("Supabase SDK failed to initialize.");return;}
     setLoading(true);
     try{
-      console.log("🔍 Querying staff table for:", email.trim());
-      const {data,error}=await supabase
-        .from("staff")
-        .select("id,name,email,role,dept")
-        .eq("email",email.trim())
-        .maybeSingle();
-      
-      console.log("📊 Query result:", data ? "FOUND" : "NOT FOUND", error);
-      
-      if(error) throw error;
-      if(!data) throw new Error("Staff member not found");
+      const cleanEmail=String(email||"").trim().toLowerCase();
+      const {data:authData,error:authError}=await supabase.auth.signInWithPassword({email:cleanEmail,password});
+      if(authError) throw authError;
+      const authUser=authData?.user;
+      if(!authUser?.id) throw new Error("Login failed. Please try again.");
 
-      const staffMember=data;
-      let dbRole=(staffMember.role||"").toLowerCase();
+      const staffLookup=await supabase
+        .from("staff")
+        .select("id,user_id,name,full_name,email,role,dept,department,status,is_active")
+        .or(`user_id.eq.${authUser.id},email.eq.${cleanEmail}`)
+        .maybeSingle();
+      if(staffLookup.error) throw staffLookup.error;
+      if(!staffLookup.data) throw new Error("No staff profile is linked with this login.");
+      if(staffLookup.data.is_active===false || String(staffLookup.data.status||'active').toLowerCase()!=='active') throw new Error("This account is inactive. Contact admin.");
+
+      let dbRole=(staffLookup.data.role||"").toLowerCase();
       if(['super_admin','principal','management'].includes(dbRole)) dbRole='admin';
       if(['helper','aya','guard','accountant','staff'].includes(dbRole)) dbRole='support';
-      let profileName=staffMember.name||staffMember.full_name||"";
-
       if(dbRole && dbRole!==role){
-        setErr(`Role mismatch. Account is '${dbRole}', but '${role}' selected.`);
-        setLoading(false);
-        return;
+        await supabase.auth.signOut();
+        throw new Error(`Role mismatch. Account is '${dbRole}', but '${role}' selected.`);
       }
-
-      const mockAuthUser={id:staffMember.id,email:staffMember.email,user_metadata:{name:profileName,role:dbRole||role}};
-      console.log("✅ Staff found, logging in:", profileName);
-      await onAuth({authUser:mockAuthUser,forcedRole:role||dbRole,profileName});
+      const profileName=staffLookup.data.name||staffLookup.data.full_name||authUser.email||"User";
+      await onAuth({authUser,forcedRole:dbRole||role,profileName});
     }catch(ex){
       console.error("❌ Login error:", ex);
       setErr(ex.message||"Invalid login credentials");
@@ -678,10 +683,12 @@ function Sidebar({page,setPage,user,onLogout,pendingLeaveCount}){
   </div>;
 }
 
-function TopBar({user,dark,setDark}){
+function TopBar({user,dark,setDark,onExportAll,onPrintAll}){
   return <div className="top">
     <input className="search" placeholder="Search staff, records..."/>
     <div className="top-right">
+      <button className="btn-export" onClick={onExportAll} title="Export all system data to CSV">Export All CSV</button>
+      <button className="btn-print" onClick={onPrintAll} title="Print or save the full dashboard as PDF">Print / PDF</button>
       <button className="icon-btn" onClick={()=>setDark(v=>!v)}>{dark?"☀":"☾"}</button>
       <button className="icon-btn">🔔</button>
       <div className="who"><div style={{fontWeight:700}}>{user.name}</div><div className="badge">{user.role}</div><div className="av" style={{width:36,height:36,fontSize:13}}>{initials(user.name)}</div></div>
@@ -1461,42 +1468,32 @@ function App(){
   };
 
   const upsertUsersRecord=async(form,existingUserId='')=>{
-    const safeId=existingUserId || form.user_id || form.id || (crypto?.randomUUID ? crypto.randomUUID() : `u-${Date.now()}`);
-    const usersPayload=trimPayload({
-      id:safeId,
-      staff_id:safeId,
-      employee_id:String(form.employee_id||'').trim().toUpperCase(),
-      full_name:String(form.full_name||'').trim(),
-      name:String(form.full_name||'').trim(),
-      email:String(form.email||'').trim().toLowerCase(),
-      role:'staff',
-      status:String(form.status||'active').toLowerCase(),
-      is_active:String(form.status||'active').toLowerCase()==='active'
-    });
-
-    if(existingUserId){
-      await runMutationWithColumnFallback(
-        (p)=>supabase.from('users').update(p).eq('id',existingUserId).select('id').maybeSingle(),
-        usersPayload
-      );
-      return existingUserId;
+    // Enterprise mode: Auth users must be created in Supabase Auth or through a service-role Edge Function, not from browser code.
+    // This function only links an existing user row when found. It never attempts privileged user creation from the client.
+    const emailNorm=String(form.email||'').trim().toLowerCase();
+    const candidateId=existingUserId || form.user_id || '';
+    if(candidateId){
+      try{
+        await runMutationWithColumnFallback(
+          (p)=>supabase.from('users').update(p).eq('id',candidateId).select('id').maybeSingle(),
+          trimPayload({
+            employee_id:String(form.employee_id||'').trim().toUpperCase(),
+            full_name:String(form.full_name||'').trim(),
+            name:String(form.full_name||'').trim(),
+            email:emailNorm,
+            role:'staff',
+            status:String(form.status||'active').toLowerCase(),
+            is_active:String(form.status||'active').toLowerCase()==='active'
+          })
+        );
+      }catch(ex){console.warn('[Users] Existing user update skipped:',ex);}
+      return candidateId;
     }
-
-    const existing=await supabase.from('users').select('id').eq('email',usersPayload.email).maybeSingle();
-    if(existing?.data?.id){
-      await runMutationWithColumnFallback(
-        (p)=>supabase.from('users').update(p).eq('id',existing.data.id).select('id').maybeSingle(),
-        usersPayload
-      );
-      return existing.data.id;
-    }
-
-    const inserted=await runMutationWithColumnFallback(
-      (p)=>supabase.from('users').insert(p).select('id').single(),
-      usersPayload
-    );
-    if(inserted.error) throw inserted.error;
-    return inserted.data?.id || '';
+    try{
+      const existing=await supabase.from('users').select('id').eq('email',emailNorm).maybeSingle();
+      if(existing?.data?.id) return existing.data.id;
+    }catch(ex){console.warn('[Users] Lookup skipped:',ex);}
+    return '';
   };
 
   const openAddStaff=()=>{
@@ -2443,6 +2440,22 @@ function App(){
 
   const logout=async()=>{if(supabase) await supabase.auth.signOut();setUser(null);};
 
+  const exportAllSystemCSV=()=>{
+    const pack=[];
+    const addRows=(table,rows)=>{(rows||[]).forEach(r=>pack.push({table,...r}));};
+    addRows('staff',staff);
+    addRows('attendance',attendance);
+    addRows('leaves',leaves);
+    addRows('attendance_summary',summary);
+    addRows('audit_log',auditLog);
+    downloadCSV(`umeed-full-system-export-${todayDateKey()}.csv`,pack);
+  };
+
+  const printAllSystem=()=>{
+    document.body.classList.add('print-whole-system');
+    setTimeout(()=>{window.print();setTimeout(()=>document.body.classList.remove('print-whole-system'),300);},50);
+  };
+
   if(showSplash) return <Splash done={()=>setShowSplash(false)}/>;
   if(!sessionChecked) return <div className="splash"><div className="splash-sub">Restoring session...</div></div>;
   if(!user) return <Login onAuth={onAuth}/>;
@@ -2514,7 +2527,7 @@ function App(){
     <div className="app-shell">
       <Sidebar page={page} setPage={setPage} user={user} onLogout={logout} pendingLeaveCount={pendingLeaveCount}/>
       <div className="main">
-        <TopBar user={user} dark={dark} setDark={setDark}/>
+        <TopBar user={user} dark={dark} setDark={setDark} onExportAll={exportAllSystemCSV} onPrintAll={printAllSystem}/>
         <div className="content">
           {page==='dashboard' && <DashboardPage stats={dashboardStats} attendanceLogs={recentDeviceLogs} onQuickMark={quickMark} onManualEntry={openManualEntry} role={user.role} pendingLeaveCount={pendingLeaveCount} onLeaveTodayRows={onLeaveTodayRows} upcomingLeaves={upcomingLeaves} analytics={dashboardAnalytics}/>} 
           {page==='reports' && <ReportsPage report={reportData} period={period} setPeriod={setPeriod}/>}
