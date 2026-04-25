@@ -526,7 +526,24 @@ body{overflow:auto;}
       .page-head h1{color:#111!important}
     }
 
-  </style>
+  
+/* FINAL LIGHT MODE */
+body.light-mode{--bg:#f8f4ee;--surface:#ffffff;--surface-2:#fbf7f1;--surface-3:#f2eadf;--border:rgba(80,45,45,.16);--muted:#6f6678;--text:#211924;background:radial-gradient(900px 450px at 20% -20%,rgba(196,30,48,.10),transparent 70%),#f8f4ee;color:var(--text)}
+body.light-mode .app-shell{background:linear-gradient(120deg,#fffaf4,#f8f1e8 48%,#fffaf4)}
+body.light-mode .sidebar{background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(250,242,235,.96));border-right-color:rgba(80,45,45,.16)}
+body.light-mode .top{background:rgba(255,250,244,.82);border-bottom-color:rgba(80,45,45,.14)}
+body.light-mode .login-card,body.light-mode .modal-card,body.light-mode .chart-card,body.light-mode .report-card,body.light-mode .staff-card,body.light-mode .device,body.light-mode .attendance-table-wrap,body.light-mode .leave-card,body.light-mode .leave-calendar,body.light-mode .greet{background:linear-gradient(145deg,rgba(255,255,255,.96),rgba(252,246,239,.96));border-color:rgba(80,45,45,.16);box-shadow:0 20px 60px rgba(70,40,35,.10)}
+body.light-mode .input,body.light-mode .mini-input,body.light-mode .search{background:rgba(255,255,255,.78);border-color:rgba(80,45,45,.18);color:#211924}
+body.light-mode .menu-btn{color:#51475a} body.light-mode .menu-btn.active{color:#fff}
+body.light-mode .muted,body.light-mode .page-head p,body.light-mode .l{color:#6f6678}
+body.light-mode .attendance-table th,body.light-mode .attendance-table td{border-bottom-color:rgba(80,45,45,.10)}
+body.light-mode .manual-row.head{background:rgba(255,250,244,.98);color:#6f6678}
+body.light-mode .modal-backdrop{background:rgba(255,250,244,.68)}
+body.light-mode .icon-btn,body.light-mode .btn-ghost{background:rgba(255,255,255,.72);border-color:rgba(80,45,45,.18);color:#211924}
+.content,.modal-card,.attendance-table-wrap,.manual-grid{scrollbar-width:thin;scrollbar-color:rgba(212,175,55,.75) rgba(255,255,255,.08)}
+@media (min-width:1300px){.content{padding-left:28px;padding-right:28px}.modal-card{max-width:1500px}.manual-row{grid-template-columns:minmax(210px,1.2fr) 150px 180px 190px 280px minmax(220px,1fr) 42px}}
+@media (max-width:900px){.manual-row{grid-template-columns:180px 130px 150px 150px 230px 220px 36px}.modal-card{width:calc(100vw - 22px);padding:14px}.top{gap:8px}.who{max-width:180px}.who>div:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+</style>
 </head>
 <body>
 <div id="root"></div>
@@ -1336,6 +1353,8 @@ function App(){
   const [page,setPage]=useState('dashboard');
   const [period,setPeriod]=useState('monthly');
   const [dark,setDark]=useState(true);
+  useEffect(()=>{document.body.classList.toggle('light-mode', !dark);try{localStorage.setItem('umeed-theme', dark ? 'dark' : 'light');}catch(e){}},[dark]);
+  useEffect(()=>{try{if(localStorage.getItem('umeed-theme')==='light') setDark(false);}catch(e){}},[]);
 
   const [staff,setStaff]=useState([]);
   const [attendance,setAttendance]=useState([]);
@@ -1662,12 +1681,13 @@ function App(){
     const backup={...deleteTarget};
     setStaff(prev=>prev.filter(s=>s.id!==deleteTarget.id));
     try{
-      const del=await supabase.from('staff').delete().eq('id',deleteTarget.id);
+      const softPayload={status:'inactive',is_active:false};
+      const del=await runMutationWithColumnFallback((p)=>supabase.from('staff').update(p).eq('id',deleteTarget.id).select('id').maybeSingle(),softPayload);
       if(del.error) throw del.error;
       await markUserInactiveBestEffort(deleteTarget);
       setDeleteTarget(null);
       setLastDeletedStaff(backup);
-      pushToast('success','Staff deleted successfully.',{onUndo:undoDeleteStaff});
+      pushToast('success','Staff removed successfully.',{onUndo:undoDeleteStaff});
       await loadData(user);
     }catch(err){
       console.error('[StaffCRUD] Delete failed:',err);
@@ -2172,6 +2192,7 @@ function App(){
         if(s.error) throw s.error;
         staffRows=s.data||[];
       }
+      staffRows=(staffRows||[]).filter(x=>String(x.status||'active').toLowerCase()!=='inactive' && x.is_active!==false);
       setStaff(staffRows);
 
       const staffIds=staffRows.map(x=>x.id).filter(Boolean);
@@ -2390,7 +2411,10 @@ function App(){
         staff_id:staffId,
         status,
         date:today,
-        check_in:new Date().toISOString(),
+        check_in:new Date().toTimeString().slice(0,8),
+        attendance_date:today,
+        method:'manual',
+        verification_method:'Manual',
         source:'manual'
       };
       const res=await supabase.from('attendance').insert(payload);
