@@ -473,6 +473,38 @@
       *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important;}
     }
 
+
+/* === PRODUCTION RESPONSIVE & ANIMATION PATCH === */
+html,body,#root{min-height:100%;height:100%;}
+body{overflow:auto;}
+.app-shell{min-height:100vh;height:100vh;overflow:hidden;}
+.content{scroll-behavior:smooth;}
+.stat,.staff-card,.report-card,.chart-card,.device,.leave-card,.modal-card{
+  transition:transform .24s ease, box-shadow .24s ease, border-color .24s ease;
+}
+.stat:hover,.staff-card:hover,.report-card:hover,.chart-card:hover,.device:hover,.leave-card:hover{
+  transform:translateY(-4px) scale(1.01);
+  border-color:rgba(212,175,55,.28);
+  box-shadow:0 26px 70px rgba(0,0,0,.34);
+}
+.menu-btn,.btn-sign,.btn-gold,.btn-maroon,.btn-dark,.btn-ghost,.btn-danger,.btn-success,.icon-btn{transition:transform .18s ease, filter .18s ease, opacity .18s ease;}
+.menu-btn:hover,.btn-sign:hover,.btn-gold:hover,.btn-maroon:hover,.btn-dark:hover,.btn-ghost:hover,.btn-danger:hover,.btn-success:hover,.icon-btn:hover{transform:translateY(-1px);filter:brightness(1.06);}
+.modal-card{animation:modalIn .22s ease both;}
+@keyframes modalIn{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media (max-width: 1440px){
+  .page-head h1{font-size:48px}.menu-btn{font-size:20px}.logo-lines strong{font-size:26px}.sidebar{width:260px}
+  .manual-row{grid-template-columns:190px 120px 140px 1fr 180px 180px 28px;}
+}
+@media (max-width: 1100px){
+  .app-shell{display:block;height:auto;min-height:100vh;overflow:auto}.sidebar{position:relative;width:100%;height:auto;display:block}.main{min-height:calc(100vh - 150px)}
+  .top{height:auto;min-height:64px;gap:10px;flex-wrap:wrap;padding:12px}.search{max-width:none;width:100%;order:2}.top-right{margin-left:auto}
+  .content{overflow:visible;padding:14px}.page-head{display:block}.page-head h1{font-size:38px}.greet{grid-template-columns:1fr}.sum-row{justify-content:flex-start}.split{grid-template-columns:1fr}.modal-card{width:96vw}.manual-grid{max-height:65vh}.manual-row{min-width:1050px}
+}
+@media (max-width: 720px){
+  .login-card{border-radius:28px;padding:26px 20px}.login-head h2{font-size:44px}.login-brand-mini strong{font-size:28px}.role-grid{grid-template-columns:1fr;}.stats4,.report-grid{grid-template-columns:1fr}.greet h3{font-size:30px}.page-head h1{font-size:34px}.modal-grid{grid-template-columns:1fr}.attendance-table{min-width:760px}.toast-wrap{left:10px;right:10px}.toast{min-width:auto;max-width:none}.staff-toolbar,.attendance-toolbar,.leave-toolbar{align-items:stretch}.btn-maroon,.btn-gold,.btn-dark,.btn-ghost,.btn-danger,.btn-success{width:100%}
+}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+
   </style>
 </head>
 <body>
@@ -770,7 +802,8 @@ const toTimeInput=(val)=>{
 };
 const combineDateAndTime=(dateStr,timeStr)=>{
   if(!dateStr || !timeStr) return null;
-  const dt=new Date(`${dateStr}T${timeStr}:00`);
+  const clean=String(timeStr).slice(0,5);
+  const dt=new Date(`${dateStr}T${clean}:00`);
   if(Number.isNaN(dt.getTime())) return null;
   return dt.toISOString();
 };
@@ -1299,11 +1332,16 @@ function App(){
   };
 
   const upsertUsersRecord=async(form,existingUserId='')=>{
+    const safeId=existingUserId || form.user_id || form.id || (crypto?.randomUUID ? crypto.randomUUID() : `u-${Date.now()}`);
     const usersPayload=trimPayload({
+      id:safeId,
+      staff_id:safeId,
+      employee_id:String(form.employee_id||'').trim().toUpperCase(),
       full_name:String(form.full_name||'').trim(),
+      name:String(form.full_name||'').trim(),
       email:String(form.email||'').trim().toLowerCase(),
       role:'staff',
-      status:form.status,
+      status:String(form.status||'active').toLowerCase(),
       is_active:String(form.status||'active').toLowerCase()==='active'
     });
 
@@ -1439,15 +1477,22 @@ function App(){
       const userId=await upsertUsersRecord(normalized,staffModalMode==='edit'?normalized.user_id:'');
 
       const staffPayload=trimPayload({
-        user_id:userId || normalized.user_id || undefined,
+        id: staffModalMode==='edit' ? undefined : (userId || normalized.user_id || normalized.id || undefined),
+        user_id:userId || normalized.user_id || normalized.id || undefined,
         full_name:normalized.full_name,
+        name:normalized.full_name,
         email:normalized.email,
         department:normalized.department,
+        dept:normalized.department,
         designation:normalized.designation,
+        position:normalized.designation,
         phone:normalized.phone,
         employee_id:normalized.employee_id,
         join_date:normalized.join_date || undefined,
-        status:normalized.status || 'Active'
+        joining_date:normalized.join_date || undefined,
+        status:String(normalized.status || 'active').toLowerCase(),
+        is_active:String(normalized.status||'active').toLowerCase()==='active',
+        role: normalized.role || 'staff'
       });
 
       if(staffModalMode==='edit' && normalized.id){
@@ -1476,11 +1521,11 @@ function App(){
   const markUserInactiveBestEffort=async(row)=>{
     try{
       if(row?.user_id){
-        await runMutationWithColumnFallback((p)=>supabase.from('users').update(p).eq('id',row.user_id).select('id').maybeSingle(),{status:'Inactive',is_active:false});
+        await runMutationWithColumnFallback((p)=>supabase.from('users').update(p).eq('id',row.user_id).select('id').maybeSingle(),{status:'inactive',is_active:false});
         return;
       }
       if(row?.email){
-        await runMutationWithColumnFallback((p)=>supabase.from('users').update(p).eq('email',row.email).select('id').maybeSingle(),{status:'Inactive',is_active:false});
+        await runMutationWithColumnFallback((p)=>supabase.from('users').update(p).eq('email',row.email).select('id').maybeSingle(),{status:'inactive',is_active:false});
       }
     }catch(ex){
       console.warn('[StaffCRUD] Mark inactive skipped:',ex);
@@ -1711,11 +1756,15 @@ function App(){
         const norm=normalizeStatus(row.status);
         const payload={
           staff_id:row.staff_id,
+          user_id:row.user_id || row.staff_id,
           date:manualDate,
+          attendance_date:manualDate,
           status:norm==='on_leave'?'On Leave':(norm==='present'?'Present':norm==='absent'?'Absent':'Late'),
           check_in:(norm==='present' || norm==='late')?combineDateAndTime(manualDate,row.check_in):null,
           check_out:(norm==='present' || norm==='late') && row.check_out?combineDateAndTime(manualDate,row.check_out):null,
-          verification_method:'Manual'
+          verification_method:'Manual',
+          method:'manual',
+          created_by:user.id
         };
 
         const existing=existingMap.get(row.staff_id);
