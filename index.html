@@ -505,6 +505,27 @@ body{overflow:auto;}
 }
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
 
+
+
+    /* Premium responsive fixes + print/export support */
+    .chart-analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+    .chart-mini-wrap{height:260px;position:relative}
+    .report-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+    .btn-print,.btn-export{border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.04);color:#fff;border-radius:12px;padding:10px 16px;font-weight:800;cursor:pointer}
+    .btn-export{background:linear-gradient(130deg,#e7c34a,var(--gold));color:#211700;border:none}
+    .chart-card canvas{animation:fadeUp .35s ease both}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    @media (max-width: 1100px){.chart-analytics-grid,.split{grid-template-columns:1fr}.report-actions{justify-content:flex-start}.r-controls{align-items:flex-start;flex-wrap:wrap}.modal-card{width:96vw}.manual-row{grid-template-columns:180px 120px 140px 1fr 190px 180px 30px}}
+    @media (max-width: 760px){.chart-analytics-grid{grid-template-columns:1fr}.chart-mini-wrap{height:230px}.report-grid{grid-template-columns:1fr}.stats4{grid-template-columns:1fr}.greet{grid-template-columns:1fr}.sum-row{justify-content:flex-start;flex-wrap:wrap}.manual-row{grid-template-columns:1fr}.manual-row.head{display:none}.modal-grid{grid-template-columns:1fr}}
+    @media print{
+      body{background:#fff!important;color:#111!important;overflow:visible!important}
+      .sidebar,.top,.btn-maroon,.btn-gold,.btn-dark,.btn-print,.btn-export,.seg,.icon-btn,.logout,.actions,.toast-wrap{display:none!important}
+      .main,.content,.app-shell{display:block!important;overflow:visible!important;height:auto!important;background:#fff!important;color:#111!important}
+      .chart-card,.report-card,.stat,.greet,.device{break-inside:avoid;background:#fff!important;color:#111!important;border:1px solid #ddd!important;box-shadow:none!important}
+      .muted,.trend,.page-head p{color:#444!important}
+      .page-head h1{color:#111!important}
+    }
+
   </style>
 </head>
 <body>
@@ -651,7 +672,7 @@ function TopBar({user,dark,setDark}){
   </div>;
 }
 
-function DashboardPage({stats,attendanceLogs,onQuickMark,onManualEntry,role,pendingLeaveCount,onLeaveTodayRows,upcomingLeaves}){
+function DashboardPage({stats,attendanceLogs,onQuickMark,onManualEntry,role,pendingLeaveCount,onLeaveTodayRows,upcomingLeaves,analytics}){
   return <>
     <div className="page-head"><div><h1>Dashboard</h1><p>Umeed Education System · {fmtDate()}</p></div></div>
     <div className="greet">
@@ -671,6 +692,19 @@ function DashboardPage({stats,attendanceLogs,onQuickMark,onManualEntry,role,pend
       <div className="stat"><div>👥</div><div className="v">{stats.presentToday}</div><div className="l">Present Today</div><div className="trend up">↗ +{stats.deltaPresent} vs yesterday</div></div>
       <div className="stat"><div>🕒</div><div className="v">{stats.absentToday}</div><div className="l">Absent Today</div><div className="trend down">↘ {stats.deltaAbsentText}</div></div>
       <div className="stat"><div>☆</div><div className="v">{stats.lateToday}</div><div className="l">Late Arrivals</div><div className="trend up">↗ -{stats.deltaLate} vs yesterday</div></div>
+    </div>
+
+    <div className="chart-analytics-grid">
+      <div className="chart-card">
+        <div style={{fontFamily:'Playfair Display,serif',fontSize:30,marginBottom:8}}>Today's Attendance Breakdown</div>
+        <div className="muted" style={{marginBottom:8}}>Present, absent, late and leave ratio</div>
+        <DoughnutChart labels={analytics.statusLabels} values={analytics.statusValues}/>
+      </div>
+      <div className="chart-card">
+        <div style={{fontFamily:'Playfair Display,serif',fontSize:30,marginBottom:8}}>Department Strength</div>
+        <div className="muted" style={{marginBottom:8}}>Active staff distribution by department</div>
+        <BarChart labels={analytics.departmentLabels} values={analytics.departmentValues} label="Staff"/>
+      </div>
     </div>
 
     <div className="leave-dashboard-grid">
@@ -719,10 +753,76 @@ function TrendChart({series}){
   return <div className="chart-wrap"><canvas ref={ref}></canvas></div>;
 }
 
+
+function DoughnutChart({labels,values}){
+  const ref=useRef(null);
+  useEffect(()=>{
+    if(!ref.current) return;
+    const chart=new Chart(ref.current.getContext('2d'),{
+      type:'doughnut',
+      data:{labels,datasets:[{data:values,backgroundColor:['#25cf7a','#ff6868','#f4ba3d','#6fa8ff','#D4AF37'],borderColor:'rgba(255,255,255,.12)',borderWidth:1,hoverOffset:8}]},
+      options:{maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{color:'#c9c2d6',usePointStyle:true,padding:16}}}}
+    });
+    return ()=>chart.destroy();
+  },[JSON.stringify(labels),JSON.stringify(values)]);
+  return <div className="chart-mini-wrap"><canvas ref={ref}></canvas></div>;
+}
+
+function PieChart({labels,values}){
+  const ref=useRef(null);
+  useEffect(()=>{
+    if(!ref.current) return;
+    const chart=new Chart(ref.current.getContext('2d'),{
+      type:'pie',
+      data:{labels,datasets:[{data:values,backgroundColor:['#25cf7a','#ff6868','#f4ba3d','#6fa8ff','#D4AF37'],borderColor:'rgba(255,255,255,.12)',borderWidth:1}]},
+      options:{maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#c9c2d6',usePointStyle:true,padding:16}}}}
+    });
+    return ()=>chart.destroy();
+  },[JSON.stringify(labels),JSON.stringify(values)]);
+  return <div className="chart-mini-wrap"><canvas ref={ref}></canvas></div>;
+}
+
+function BarChart({labels,values,label='Records'}){
+  const ref=useRef(null);
+  useEffect(()=>{
+    if(!ref.current) return;
+    const chart=new Chart(ref.current.getContext('2d'),{
+      type:'bar',
+      data:{labels,datasets:[{label,data:values,backgroundColor:'rgba(212,175,55,.72)',borderColor:'#D4AF37',borderWidth:1,borderRadius:8}]},
+      options:{maintainAspectRatio:false,plugins:{legend:{labels:{color:'#c9c2d6'}}},scales:{x:{ticks:{color:'#8f879f'},grid:{color:'rgba(255,255,255,.05)'}},y:{beginAtZero:true,ticks:{color:'#8f879f',precision:0},grid:{color:'rgba(255,255,255,.06)'}}}}
+    });
+    return ()=>chart.destroy();
+  },[JSON.stringify(labels),JSON.stringify(values),label]);
+  return <div className="chart-mini-wrap"><canvas ref={ref}></canvas></div>;
+}
+
+function downloadCSV(filename,rows){
+  const safeRows=Array.isArray(rows)?rows:[];
+  if(!safeRows.length){ alert('No data available to export.'); return; }
+  const headers=Object.keys(safeRows[0]);
+  const escapeCell=(v)=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const csv=[headers.map(escapeCell).join(','),...safeRows.map(r=>headers.map(h=>escapeCell(r[h])).join(','))].join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function ReportsPage({report,period,setPeriod}){
   return <>
     <div className="page-head"><div><h1>Reports</h1><p>Umeed Education System · {fmtDate()}</p></div>
-      <div className="r-controls"><div className="seg">{['monthly','quarterly','yearly'].map(p=><button key={p} className={period===p?'active':''} onClick={()=>setPeriod(p)}>{p[0].toUpperCase()+p.slice(1)}</button>)}</div><button className="btn-maroon">Export PDF</button></div>
+      <div className="r-controls">
+        <div className="seg">{['monthly','quarterly','yearly'].map(p=><button key={p} className={period===p?'active':''} onClick={()=>setPeriod(p)}>{p[0].toUpperCase()+p.slice(1)}</button>)}</div>
+        <div className="report-actions">
+          <button className="btn-export" onClick={()=>downloadCSV(`umeed-attendance-report-${todayDateKey()}.csv`,report.exportRows)}>Export CSV</button>
+          <button className="btn-print" onClick={()=>window.print()}>Print / Save PDF</button>
+        </div>
+      </div>
     </div>
 
     <div className="report-grid">
@@ -734,8 +834,13 @@ function ReportsPage({report,period,setPeriod}){
 
     <div className="chart-card"><div style={{fontFamily:'Playfair Display,serif',fontSize:34}}>12-Month Attendance Trend</div><div className="muted" style={{marginBottom:8}}>Jan {new Date().getFullYear()} — Dec {new Date().getFullYear()}</div><TrendChart series={report.chart}/></div>
 
+    <div className="chart-analytics-grid">
+      <div className="chart-card"><div style={{fontFamily:'Playfair Display,serif',fontSize:34,marginBottom:8}}>Attendance Donut Chart</div><DoughnutChart labels={['Present','Absent','Late','On Leave']} values={[report.today.present,report.today.absent,report.today.late,report.today.leave]}/></div>
+      <div className="chart-card"><div style={{fontFamily:'Playfair Display,serif',fontSize:34,marginBottom:8}}>Attendance Pie Chart</div><PieChart labels={['Present','Absent','Late','On Leave']} values={[report.today.present,report.today.absent,report.today.late,report.today.leave]}/></div>
+    </div>
+
     <div className="split">
-      <div className="chart-card"><div style={{fontFamily:'Playfair Display,serif',fontSize:34,marginBottom:8}}>By Department</div>{report.byDepartment.length===0?<div className="muted">No departmental summary available.</div>:report.byDepartment.map((d,i)=><div key={i} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid rgba(255,255,255,.07)'}}><span>{d.department||'General'}</span><b>{d.present_rate||d.rate||0}%</b></div>)}</div>
+      <div className="chart-card"><div style={{fontFamily:'Playfair Display,serif',fontSize:34,marginBottom:8}}>By Department</div>{report.byDepartment.length===0?<div className="muted">No departmental summary available.</div>:<><BarChart labels={report.byDepartment.map(d=>d.department||'General')} values={report.byDepartment.map(d=>Number(d.present_rate||d.rate||0))} label="Attendance %"/>{report.byDepartment.map((d,i)=><div key={i} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid rgba(255,255,255,.07)'}}><span>{d.department||'General'}</span><b>{d.present_rate||d.rate||0}%</b></div>)}</>}</div>
       <div className="chart-card"><div style={{fontFamily:'Playfair Display,serif',fontSize:34,marginBottom:8}}>Today's Status</div><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>{[["Present",report.today.present],["Absent",report.today.absent],["Late",report.today.late],["On Leave",report.today.leave]].map(([k,v])=><div key={k} className="d-kpi"><div className="muted">{k}</div><div style={{fontSize:32,fontWeight:800}}>{v}</div></div>)}</div></div>
     </div>
   </>;
@@ -803,9 +908,14 @@ const toTimeInput=(val)=>{
 const combineDateAndTime=(dateStr,timeStr)=>{
   if(!dateStr || !timeStr) return null;
   const clean=String(timeStr).slice(0,5);
-  const dt=new Date(`${dateStr}T${clean}:00`);
-  if(Number.isNaN(dt.getTime())) return null;
-  return dt.toISOString();
+  return /^\d{2}:\d{2}$/.test(clean) ? `${clean}:00` : null;
+};
+const displayTime=(val)=>{
+  if(!val) return '--:--';
+  const raw=String(val);
+  if(/^\d{2}:\d{2}/.test(raw)) return raw.slice(0,5);
+  const dt=new Date(raw);
+  return Number.isNaN(dt.getTime()) ? '--:--' : dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 };
 const normalizeStatus=(status='')=>String(status).toLowerCase().replace(/\s+/g,'_');
 const isFutureDate=(dateStr)=>dateStr>todayDateKey();
@@ -2186,9 +2296,23 @@ function App(){
       deltaAbsentText:absentToday===yAbsent?"Same as yesterday":`${Math.abs(absentToday-yAbsent)} vs yesterday`,
       deltaLate:Math.max(0,yLate-lateToday),
       recordsToday:rowsToday.length,
-      lastSync:rowsToday[0]?.check_in || rowsToday[0]?.created_at ? new Date(rowsToday[0]?.check_in || rowsToday[0]?.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '--:--'
+      lastSync:rowsToday[0]?.check_in ? displayTime(rowsToday[0].check_in) : (rowsToday[0]?.created_at ? displayTime(rowsToday[0].created_at) : '--:--')
     };
   },[attendance,staff,onLeaveTodayRows]);
+
+  const dashboardAnalytics=useMemo(()=>{
+    const deptMap=new Map();
+    (staff||[]).forEach(s=>{
+      const d=s.department||s.dept||'General';
+      deptMap.set(d,(deptMap.get(d)||0)+1);
+    });
+    return {
+      statusLabels:['Present','Absent','Late','On Leave'],
+      statusValues:[dashboardStats.presentToday,dashboardStats.absentToday,dashboardStats.lateToday,dashboardStats.onLeaveToday],
+      departmentLabels:Array.from(deptMap.keys()),
+      departmentValues:Array.from(deptMap.values())
+    };
+  },[staff,dashboardStats]);
 
   const reportData=useMemo(()=>{
     const y=new Date().getFullYear();
@@ -2196,8 +2320,9 @@ function App(){
     const agg=labels.map(()=>({present:0,absent:0,late:0,total:0}));
 
     attendance.forEach(r=>{
-      const dt=new Date(r.date||r.created_at||Date.now());
-      if(dt.getFullYear()!==y) return;
+      const rawDate=r.date||r.attendance_date||r.created_at||Date.now();
+      const dt=new Date(rawDate);
+      if(Number.isNaN(dt.getTime()) || dt.getFullYear()!==y) return;
       const m=dt.getMonth();
       const st=String(r.status||'').toLowerCase();
       if(st==='present') agg[m].present+=1;
@@ -2218,6 +2343,21 @@ function App(){
     const byDepartment=summary.length?summary.map(s=>({department:s.department||s.dept||"General",present_rate:s.present_rate||s.attendance_rate||0})):
       Array.from(staff.reduce((m,s)=>{const d=s.department||'General';if(!m.has(d))m.set(d,0);m.set(d,m.get(d)+1);return m;},new Map())).map(([department,count])=>({department,present_rate:count}));
 
+    const exportRows=(attendance||[]).map(r=>{
+      const st=staffMap.get(r.staff_id)||{};
+      return {
+        date:toDateInput(r.date||r.attendance_date||r.created_at||''),
+        employee_id:st.employee_id||r.employee_id||'',
+        staff_name:st.full_name||st.name||r.staff_name||r.name||'',
+        department:st.department||st.dept||r.department||r.dept||'',
+        status:r.status||'',
+        check_in:r.check_in||'',
+        check_out:r.check_out||'',
+        method:r.verification_method||r.method||r.source||'',
+        remarks:r.remarks||r.notes||''
+      };
+    });
+
     return {
       avgAttendance:Math.round((totalPresent/totalAll)*100),
       avgDelta:Math.max(0,cur.present-prev.present),
@@ -2229,12 +2369,13 @@ function App(){
       lateDelta:Math.max(0,prev.late-cur.late),
       chart:{labels,present:agg.map(a=>a.present),absent:agg.map(a=>a.absent),late:agg.map(a=>a.late)},
       byDepartment,
-      today:{present:dashboardStats.presentToday,absent:dashboardStats.absentToday,late:dashboardStats.lateToday,leave:dashboardStats.onLeaveToday}
+      today:{present:dashboardStats.presentToday,absent:dashboardStats.absentToday,late:dashboardStats.lateToday,leave:dashboardStats.onLeaveToday},
+      exportRows
     };
-  },[attendance,summary,staff,dashboardStats]);
+  },[attendance,summary,staff,dashboardStats,staffMap]);
 
   const recentDeviceLogs=useMemo(()=>{
-    const rows=(attendance||[]).slice(0,12).map(r=>({id:r.id,name:staffMap.get(r.staff_id)?.full_name||r.staff_name||r.name||r.full_name||'Staff',staff_id:staffMap.get(r.staff_id)?.employee_id||r.staff_id||r.employee_id||r.code,time:r.check_in?new Date(r.check_in).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):r.time||new Date(r.created_at||Date.now()).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),status:r.status,method:r.verification_method||r.method||'Fingerprint'}));
+    const rows=(attendance||[]).slice(0,12).map(r=>({id:r.id,name:staffMap.get(r.staff_id)?.full_name||r.staff_name||r.name||r.full_name||'Staff',staff_id:staffMap.get(r.staff_id)?.employee_id||r.staff_id||r.employee_id||r.code,time:r.check_in?displayTime(r.check_in):(r.time||displayTime(r.created_at||Date.now())),status:r.status,method:r.verification_method||r.method||'Fingerprint'}));
     if(rows.length) return rows;
     return (auditLog||[]).slice(0,12).map(a=>({id:a.id,name:a.full_name||a.user_name||a.email||'Staff',staff_id:a.user_id,time:new Date(a.created_at||Date.now()).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),status:a.action||'present',method:a.device||'Device'}));
   },[attendance,auditLog,staffMap]);
@@ -2351,7 +2492,7 @@ function App(){
       <div className="main">
         <TopBar user={user} dark={dark} setDark={setDark}/>
         <div className="content">
-          {page==='dashboard' && <DashboardPage stats={dashboardStats} attendanceLogs={recentDeviceLogs} onQuickMark={quickMark} onManualEntry={openManualEntry} role={user.role} pendingLeaveCount={pendingLeaveCount} onLeaveTodayRows={onLeaveTodayRows} upcomingLeaves={upcomingLeaves}/>} 
+          {page==='dashboard' && <DashboardPage stats={dashboardStats} attendanceLogs={recentDeviceLogs} onQuickMark={quickMark} onManualEntry={openManualEntry} role={user.role} pendingLeaveCount={pendingLeaveCount} onLeaveTodayRows={onLeaveTodayRows} upcomingLeaves={upcomingLeaves} analytics={dashboardAnalytics}/>} 
           {page==='reports' && <ReportsPage report={reportData} period={period} setPeriod={setPeriod}/>}
           {page==='attendance' && <AttendancePage rows={attendance} staffMap={staffMap} fromDate={attendanceFrom} toDate={attendanceTo} onChangeFrom={setAttendanceFrom} onChangeTo={setAttendanceTo} onOpenManualEntry={openManualEntry} loading={dataLoading}/>}
           {page==='staff' && (user.role==='admin'
